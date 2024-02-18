@@ -2,12 +2,11 @@ blueprint:
   name: YAFN - Yet Another Frigate Notifications - v0.5.0
   description: | 
     ### [Yet Another Frigate Notifications - v0.5.0](https://github.com/ralphv/yafn)
-  domain: automation
+    domain: automation
   input:
     home_assistant_base_url:
       name: Home assistant base url
       description: This is the base url of your home assistant.
-      default: "https://home.urlip.com"
       selector:
         text:
           prefix: URL
