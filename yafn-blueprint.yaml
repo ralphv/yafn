@@ -1,0 +1,240 @@
+blueprint:
+  name: YAFN - Yet Another Frigate Notifications - v0.5.0
+  description: | 
+    # Frigate notifications v0.5.0
+
+  domain: automation
+  input:
+    home_assistant_base_url:
+      name: Home assistant base url
+      description: This is the base url of your home assistant.
+      default: "https://home.urlip.com"
+      selector:
+        text:
+          prefix: URL
+          type: url
+    notify_device:
+      name: Mobile Device
+      description: |
+        Select a device that runs the official Home Assistant app to receive notifications.
+        This input is NOT OPTIONAL
+      selector:
+        device:
+          integration: mobile_app
+    camera_filter:
+      name: Frigate Camera
+      description: |
+        Select the camera entity that will trigger notifications. 
+        If left empty, it will be enabled for all cameras.
+      default: ""
+      selector:
+        entity:
+          integration: frigate
+          domain: camera
+          device_class: camera
+    labels_filter:
+      name: Labels Filter
+      description: |
+        Enter or select one object at a time.
+      default: ""
+      selector:
+        select:
+          options:
+            - person
+            - car
+          multiple: true
+          custom_value: true
+    car_notification_toggle:
+      name: Car notifications toggle
+      description: |
+        Entity name of a boolean toggle that controls 'car' notifications.
+        If left empty, Car notifications will be on.
+        Create using: Devices & Services -> Helpers -> Create Helper -> Toggle
+      default: ""
+      selector:
+        entity:
+          filter:
+            - integration: input_boolean
+    person_notification_toggle:
+      name: Person notifications toggle
+      description: |
+        Entity name of a boolean toggle that controls 'person' notifications.
+        If left empty, Person notifications will be on.
+        Create using: Devices & Services -> Helpers -> Create Helper -> Toggle
+      default: ""
+      selector:
+        entity:
+          filter:
+            - integration: input_boolean
+    non_stationary_only_notification_toggle:
+      name: Non Stationary only notifications toggle
+      description: |
+        Entity name of a boolean toggle. If the toggle is on then only non stationary objects will get notifications.
+        If left empty, only non stationary events will be triggered.
+        Create using: Devices & Services -> Helpers -> Create Helper -> Toggle
+      default: ""
+      selector:
+        entity:
+          filter:
+            - integration: input_boolean
+    silence_timer:
+      name: The silence timer
+      description: The time to silence the notifications in minutes.
+      default: 30
+      selector:
+        number:
+          min: 5
+          max: 1440
+          unit_of_measurement: "minutes"
+
+#https://HA_URL/api/frigate/notifications/<event-id>/thumbnail.jpg
+#https://HA_URL/api/frigate/notifications/<event-id>/snapshot.jpg
+#https://HA_URL/api/frigate/notifications/<event-id>/clip.mp4
+trigger:
+  - platform: mqtt
+    id: frigate-event-new
+    topic: frigate/events
+    payload: new
+    value_template: "{{ value_json.type }}"
+  - platform: event
+    id: notification-click-silence
+    event_type: mobile_app_notification_action
+    event_data:
+      action: "yafn-silence-{{this.entity_id}}"
+action:
+  - choose:
+      - alias: "Debug: write to Log"
+        conditions:
+          - condition: template
+            value_template: "{{debug}}"
+          - condition: trigger
+            id: frigate-event-new
+        sequence:
+          - variables:
+              event_id: "{{ trigger.payload_json.after.id}}"
+              camera: "{{ trigger.payload_json.before.camera }}"
+              label: "{{ trigger.payload_json.before.label }}"
+              stationary: "{{ trigger.payload_json.after.stationary == true }}"
+              car_on: "{{is_state(car_notification_toggle, 'on')}}"
+              person_on: "{{is_state(person_notification_toggle, 'on')}}"
+          - service: logbook.log
+            data_template:
+              name: Frigate Notification
+              message: |
+                DEBUG: 
+                  Info:
+                    event id: {{event_id}} 
+                    camera: {{camera}} 
+                    label: {{label}} 
+                    stationary: {{stationary}} 
+                    car_on: {{car_on}} 
+                    person_on: {{person_on}} 
+                  Debug: 
+                    JSON: {{trigger.payload_json}}
+  - choose:
+      alias: Frigate Event New Non stationary
+      conditions:
+        - condition: trigger
+          id: frigate-event-new
+        - condition: template
+          value_template: "{{ is_state(this.entity_id, 'on') }}"
+        - condition: template
+          alias: "check toggle for car"
+          value_template: >-
+            {{ car_notification_toggle == '' or trigger.payload_json.after.label != 'car' or is_state(car_notification_toggle, 'on') }}
+        - condition: template
+          alias: "check toggle for person"
+          value_template: >-
+            {{ person_notification_toggle == '' or trigger.payload_json.after.label != 'person' or is_state(person_notification_toggle, 'on') }}
+        - condition: template
+          alias: "non stationary only"
+          value_template: >-
+            {{ is_state(non_stationary_only_notification_toggle, 'off') or trigger.payload_json.after.stationary == false }}
+        - condition: template
+          alias: "camera filter"
+          value_template: >-
+            {{ camera_filter == '' or trigger.payload_json.before.camera == camera_filter }}
+        - condition: template
+          alias: "labels filter"
+          value_template: >-
+            {{ not labels_filter|length or trigger.payload_json.after.label in labels_filter }}
+
+      sequence:
+        - variables:
+            event_id: "{{ trigger.payload_json.after.id }}"
+            camera: "{{ trigger.payload_json.before.camera }}"
+            camera_url_safe: "{{ trigger.payload_json.before.camera.lower() }}"
+            label: "{{ trigger.payload_json.before.label }}"
+            label_lower: "{{ trigger.payload_json.before.label |lower }}"
+            stationary: "{{ trigger.payload_json.after.stationary == true }}"
+            action_open_clip: "{{base_url}}/api/frigate/notifications/{{event_id}}/clip.mp4"
+            action_open_image: "{{base_url}}/api/frigate/notifications/{{event_id}}/{{attachment_type}}.jpg?format=android"
+            token: "{{state_attr( 'camera.' ~ camera, 'access_token')}}"
+            action_view_stream: "{{base_url}}/api/camera_proxy_stream/camera.{{trigger.payload_json['after']['camera'].lower()}}?token={{token}}"
+        - device_id: !input notify_device
+          domain: mobile_app
+          type: notify
+          message: A {{ label }} was detected on {{camera}}
+          data:
+            tag: "{{ event_id }}"
+            group: "{{ camera }}-frigate-notification"
+            image: "{{action_open_image}}"
+            clickAction: "{{action_open_clip}}"
+            ttl: "{{ iif(critical, 0, 3600000) }}"
+            priority: "{{ iif(critical, 'high', 'normal') }}"
+            notification_icon: "mdi:{{'account-outline' if label_lower == 'person' else 'dog' if label_lower == 'dog' else 'cat' if label_lower == 'cat' else 'car' if label_lower == 'car' else 'cctv'}}"
+            channel: "{{camera}}-frigate"
+            actions:
+              - action: URI
+                title: Snapshot
+                uri: "{{action_open_image}}"
+              - action: URI
+                title: Stream
+                uri: "{{action_view_stream}}"
+              - action: "yafn-silence-{{this.entity_id}}"
+                title: Silence
+
+  - choose:
+      alias: Silence New Object Notifications
+      conditions:
+        - condition: trigger
+          id: notification-click-silence
+      sequence:
+        - device_id: !input notify_device
+          domain: mobile_app
+          type: notify
+          message: Silenced for {{silence_timer}} minutes
+        - service: notify.persistent_notification
+          data:
+            title: YAFN Silenced
+            message: Silenced for {{silence_timer}} minutes at {{ now() }}
+        - service: automation.turn_off
+          target:
+            entity_id: "{{ this.entity_id }}"
+          data:
+            stop_actions: false
+        - delay:
+            minutes: "{{silence_timer}}"
+        - service: automation.turn_on
+          target:
+            entity_id: "{{ this.entity_id }}"
+        - service: notify.persistent_notification
+          data:
+            title: YAFN Active
+            message: Active again at {{ now() }}
+variables:
+  input_home_assistant_base_url: !input home_assistant_base_url
+  base_url: "{{ input_home_assistant_base_url.rstrip('/')}}"
+  silence_timer: !input silence_timer
+  car_notification_toggle: !input car_notification_toggle
+  person_notification_toggle: !input person_notification_toggle
+  non_stationary_only_notification_toggle: !input non_stationary_only_notification_toggle
+  input_labels_filter: !input labels_filter
+  labels_filter: "{{ input_labels_filter | list | lower }}"
+  input_camera_filter: !input camera_filter
+  camera_filter: "{{ input_camera_filter | replace('camera.', '') }}"
+  critical: false
+  debug: false
+  attachment_type: snapshot
+
+mode: parallel
