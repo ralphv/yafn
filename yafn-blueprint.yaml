@@ -1,8 +1,7 @@
 blueprint:
   name: YAFN - Yet Another Frigate Notifications - v0.5.0
   description: | 
-    ## [Yet Another Frigate Notifications - v0.5.0](https://github.com/ralphv/yafn)
-    Based from [https://github.com/SgtBatten/HA_blueprints/](https://github.com/SgtBatten/HA_blueprints/)
+    ### [Yet Another Frigate Notifications - v0.5.0](https://github.com/ralphv/yafn)
   domain: automation
   input:
     home_assistant_base_url:
@@ -17,7 +16,6 @@ blueprint:
       name: Mobile Device
       description: |
         Select a device that runs the official Home Assistant app to receive notifications.
-        This input is NOT OPTIONAL
       selector:
         device:
           integration: mobile_app
@@ -35,7 +33,8 @@ blueprint:
     labels_filter:
       name: Labels Filter
       description: |
-        Enter or select one object at a time.
+        Enter or select one label at a time.
+        If left empty, it will allow all labels.
       default: ""
       selector:
         select:
