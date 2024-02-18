@@ -1,8 +1,7 @@
 blueprint:
-  name: YAFN - Yet Another Frigate Notifications - v0.5.0
+  name: YAFN - Yet Another Frigate Notifications - v0.5.1
   description: | 
-    ### [Yet Another Frigate Notifications - v0.5.0](https://github.com/ralphv/yafn)
-
+    ### [Yet Another Frigate Notifications - v0.5.1](https://github.com/ralphv/yafn)
   domain: automation
   input:
     home_assistant_base_url:
