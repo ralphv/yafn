@@ -1,7 +1,7 @@
 blueprint:
   name: YAFN - Yet Another Frigate Notifications - v0.5.0
   description: | 
-    # Frigate notifications v0.5.0
+    ## Yet Another Frigate Notifications - v0.5.0
 
   domain: automation
   input:
