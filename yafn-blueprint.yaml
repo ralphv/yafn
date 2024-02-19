@@ -1,7 +1,7 @@
 blueprint:
-  name: YAFN - Yet Another Frigate Notifications - v0.5.1
+  name: YAFN - Yet Another Frigate Notifications - v0.5.2
   description: | 
-    ### [Yet Another Frigate Notifications - v0.5.1](https://github.com/ralphv/yafn)
+    ### [Yet Another Frigate Notifications - v0.5.2](https://github.com/ralphv/yafn)
   domain: automation
   input:
     home_assistant_base_url:
@@ -181,7 +181,7 @@ action:
             ttl: "{{ iif(critical, 0, 3600000) }}"
             priority: "{{ iif(critical, 'high', 'normal') }}"
             notification_icon: "mdi:{{'account-outline' if label_lower == 'person' else 'dog' if label_lower == 'dog' else 'cat' if label_lower == 'cat' else 'car' if label_lower == 'car' else 'cctv'}}"
-            channel: "{{camera}}-frigate"
+            channel: "yafn-{{camera_url_safe}}-{{label_lower}}"
             actions:
               - action: URI
                 title: Snapshot
