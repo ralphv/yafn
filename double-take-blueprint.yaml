@@ -1,0 +1,66 @@
+blueprint:
+  name: YAFN - Yet Another Double Take Notifications - v0.5.0
+  description: |
+    ### [Yet Another Double Take Notifications - v0.5.0](https://github.com/ralphv/yafn)
+  domain: automation
+  input:
+    input_double_take_base_url:
+      name: Double take base url
+      description: This is the base url of your double take.
+      selector:
+        text:
+          prefix: URL
+          type: url
+    notify_device:
+      name: Mobile Device
+      description: |
+        Select a device that runs the official Home Assistant app to receive notifications.
+      selector:
+        device:
+          integration: mobile_app
+    silence_timer:
+      name: The silence timer
+      description: The time to silence the notifications in minutes.
+      default: 30
+      selector:
+        number:
+          min: 5
+          max: 1440
+          unit_of_measurement: "minutes"
+
+trigger:
+  - platform: mqtt
+    id: double-take-matches
+    topic: double-take/matches/+
+action:
+  - choose:
+      - alias: Double take new match
+        conditions:
+          - condition: trigger
+            id: double-take-matches
+        sequence:
+          - variables:
+              event_id: "{{ trigger.payload_json.id }}"
+              camera: "{{ trigger.payload_json.camera }}"
+              person: "{{ trigger.payload_json.match.name }}"
+              confidence: "{{ trigger.payload_json.match.confidence }}"
+              match: "{{ trigger.payload_json.match.match }}"
+              filename: "{{ trigger.payload_json.match.filename }}"
+              action_open_image: "{{double_take_base_url}}/api/storage/matches/{{filename}}"
+          - device_id: !input notify_device
+            domain: mobile_app
+            type: notify
+            message: "{{ person }} detected on {{ camera }}"
+            data:
+              tag: "{{ event_id }}"
+              image: "{{action_open_image}}"
+              clickAction: "{{action_open_image}}"
+              notification_icon: mdi:person
+              channel: "{{camera}}-{{person}}-double-take"
+
+variables:
+  input_double_take_base_url: !input input_double_take_base_url
+  double_take_base_url: "{{ input_double_take_base_url.rstrip('/')}}"
+  silence_timer: !input silence_timer
+
+mode: parallel
