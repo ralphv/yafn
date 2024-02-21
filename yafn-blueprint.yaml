@@ -84,6 +84,18 @@ blueprint:
           min: 5
           max: 1440
           unit_of_measurement: "minutes"
+    attachment_type:
+      name: Attachment
+      description: |
+        Choose which image to attach to the notification.
+      default: thumbnail
+      selector:
+        select:
+          options:
+            - label: Thumbnail
+              value: thumbnail
+            - label: Snapshot
+              value: snapshot
 
 #https://HA_URL/api/frigate/notifications/<event-id>/thumbnail.jpg
 #https://HA_URL/api/frigate/notifications/<event-id>/snapshot.jpg
@@ -233,6 +245,6 @@ variables:
   camera_filter: "{{ input_camera_filter | replace('camera.', '') }}"
   critical: false
   debug: false
-  attachment_type: snapshot
+  attachment_type: !input attachment_type
 
 mode: parallel
