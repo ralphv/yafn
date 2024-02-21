@@ -27,6 +27,12 @@ blueprint:
           min: 5
           max: 1440
           unit_of_measurement: "minutes"
+    alert_google_sdk:
+      name: Broadcast to google assistant
+      description: Announces on google assistant
+      default: false
+      selector:
+        boolean:
 
 trigger:
   - platform: mqtt
@@ -57,10 +63,20 @@ action:
               clickAction: "{{action_open_image}}"
               notification_icon: mdi:person
               channel: "{{camera}}-{{person}}-double-take"
+          - choose:
+              - alias: Broadcast to google
+                conditions:
+                  - condition: template
+                    value_template: "{{ alert_google_sdk }}"
+                sequence:
+                  - service: notify.google_assistant_sdk
+                    data:
+                      message: "{{ person }} detected on {{ camera }}"
 
 variables:
   input_double_take_base_url: !input input_double_take_base_url
   double_take_base_url: "{{ input_double_take_base_url.rstrip('/')}}"
   silence_timer: !input silence_timer
+  alert_google_sdk: !input alert_google_sdk
 
 mode: parallel
