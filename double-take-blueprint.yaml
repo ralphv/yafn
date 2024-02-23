@@ -38,7 +38,7 @@ blueprint:
       description: |
         Enter or select one person at a time.
         If left empty, it will allow all persons.
-      default: ""
+      default: []
       selector:
         select:
           options: []
@@ -49,7 +49,7 @@ blueprint:
       description: |
         Enter or select one person at a time.
         If left empty, it will not exclude any persons.
-      default: ""
+      default: []
       selector:
         select:
           options: []
