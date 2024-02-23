@@ -1,7 +1,7 @@
 blueprint:
-  name: YAFN - Yet Another Double Take Notifications - v0.5.0
+  name: YAFN - Yet Another Double Take Notifications - v0.5.1
   description: |
-    ### [Yet Another Double Take Notifications - v0.5.0](https://github.com/ralphv/yafn)
+    ### [Yet Another Double Take Notifications - v0.5.1](https://github.com/ralphv/yafn)
   domain: automation
   input:
     input_double_take_base_url:
@@ -33,6 +33,26 @@ blueprint:
       default: false
       selector:
         boolean:
+    include_persons_filter:
+      name: Include Persons Filter
+      description: |
+        Enter or select one person at a time.
+        If left empty, it will allow all persons.
+      default: ""
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+    exclude_persons_filter:
+      name: Exclude Persons Filter
+      description: |
+        Enter or select one person at a time.
+        If left empty, it will not exclude any persons.
+      default: ""
+      selector:
+        select:
+          multiple: true
+          custom_value: true
 
 trigger:
   - platform: mqtt
@@ -44,6 +64,14 @@ action:
         conditions:
           - condition: trigger
             id: double-take-matches
+          - condition: template
+            alias: "include persons filter"
+            value_template: >-
+              {{ not include_persons_filter|length or trigger.payload_json.match.name in include_persons_filter }}
+          - condition: template
+            alias: "exclude persons filter"
+            value_template: >-
+              {{ not exclude_persons_filter|length or trigger.payload_json.match.name not in exclude_persons_filter }}
         sequence:
           - variables:
               event_id: "{{ trigger.payload_json.id }}"
@@ -78,5 +106,9 @@ variables:
   double_take_base_url: "{{ input_double_take_base_url.rstrip('/')}}"
   silence_timer: !input silence_timer
   alert_google_sdk: !input alert_google_sdk
+  input_include_persons_filter: !input include_persons_filter
+  include_persons_filter: "{{ input_include_persons_filter | list | lower }}"
+  input_exclude_persons_filter: !input exclude_persons_filter
+  exclude_persons_filter: "{{ input_exclude_persons_filter | list | lower }}"
 
 mode: parallel
