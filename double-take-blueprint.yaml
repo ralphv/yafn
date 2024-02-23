@@ -1,7 +1,7 @@
 blueprint:
-  name: YAFN - Yet Another Double Take Notifications - v0.5.1
+  name: YAFN - Yet Another Double Take Notifications - v0.5.2
   description: |
-    ### [Yet Another Double Take Notifications - v0.5.1](https://github.com/ralphv/yafn)
+    ### [Yet Another Double Take Notifications - v0.5.2](https://github.com/ralphv/yafn)
   domain: automation
   input:
     input_double_take_base_url:
