@@ -13,4 +13,4 @@ Based from https://github.com/SgtBatten/HA_blueprints/
 0.5.2: Made the channel parameterized with camera AND label
 
 #### Release notes Double Take:
-0.5.1: Added include/exclude persons folder
+0.5.2: Added include/exclude persons folder
