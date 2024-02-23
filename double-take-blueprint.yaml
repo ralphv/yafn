@@ -41,6 +41,7 @@ blueprint:
       default: ""
       selector:
         select:
+          options: []
           multiple: true
           custom_value: true
     exclude_persons_filter:
@@ -51,6 +52,7 @@ blueprint:
       default: ""
       selector:
         select:
+          options: []
           multiple: true
           custom_value: true
 
